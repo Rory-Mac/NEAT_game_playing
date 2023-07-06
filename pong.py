@@ -8,8 +8,8 @@ def main():
     pygame.init()
     clock = pygame.time.Clock()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    left_paddle = WallPaddle(PaddleOrientation.LEFT_ORIENTED)
-    right_paddle = WallPaddle(PaddleOrientation.RIGHT_ORIENTED)
+    left_paddle = PerfectAgentPaddle(PaddleOrientation.LEFT_ORIENTED)
+    right_paddle = HumanPaddle(PaddleOrientation.RIGHT_ORIENTED)
     ball = Ball()
     # initial screen waits for user keypress
     left_paddle.draw(screen)
@@ -53,7 +53,8 @@ def main():
         # ball and paddle movement
         left_paddle.move()
         right_paddle.move()
-        ball.move(left_paddle, right_paddle)
+        ball.move()
+        ball.check_collisions(left_paddle, right_paddle)
         # check termination condition
         if ball.out_of_bounds(): break
 

@@ -11,9 +11,9 @@ class Paddle(ABC):
     def __init__(self, orientation):
         self.orientation = orientation
         if self.is_left_oriented():
-            self.shape = pygame.Rect(10, (SCREEN_HEIGHT - PADDLE_HEIGHT) / 2, PADDLE_WIDTH, PADDLE_HEIGHT)
+            self.shape = pygame.Rect(PADDLE_PADDING, (SCREEN_HEIGHT - PADDLE_HEIGHT) / 2, PADDLE_WIDTH, PADDLE_HEIGHT)
         else:
-            self.shape = pygame.Rect(SCREEN_WIDTH - (10 + PADDLE_WIDTH), (SCREEN_HEIGHT - PADDLE_HEIGHT) / 2, PADDLE_WIDTH, PADDLE_HEIGHT)
+            self.shape = pygame.Rect(SCREEN_WIDTH - (PADDLE_PADDING + PADDLE_WIDTH), (SCREEN_HEIGHT - PADDLE_HEIGHT) / 2, PADDLE_WIDTH, PADDLE_HEIGHT)
         self.is_moving_up = False
         self.is_moving_down = False
 
