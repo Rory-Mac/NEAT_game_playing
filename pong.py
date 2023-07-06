@@ -1,37 +1,72 @@
 import pygame
+from ball import Ball
+from paddle import *
+from constants import *
 
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
-
-PADDLE_WIDTH = 10
-PADDLE_HEIGHT = 50
-BALL_WIDTH = 10
-
-# intialise game features
-clock = pygame.time.Clock()
-pygame.init()
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-
-# main game loop
-running = True
-while running:
-    # event handling
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-    
-    # game
-    left_paddle = pygame.Rect(10, (SCREEN_HEIGHT - PADDLE_HEIGHT) / 2, PADDLE_WIDTH, PADDLE_HEIGHT)
-    right_paddle = pygame.Rect(SCREEN_WIDTH - (10 + PADDLE_WIDTH), (SCREEN_HEIGHT - PADDLE_HEIGHT) / 2, PADDLE_WIDTH, PADDLE_HEIGHT)
-    ball = pygame.Rect(SCREEN_WIDTH / 2 - BALL_WIDTH, SCREEN_HEIGHT / 2 - BALL_WIDTH, BALL_WIDTH, BALL_WIDTH)
-
-    # update frame buffer
-    screen.fill((0, 0, 0))
-    pygame.draw.rect(screen, (255,255,255), left_paddle)
-    pygame.draw.rect(screen, (255,255,255), right_paddle)
-    pygame.draw.rect(screen, (255,255,255), ball)
-
-    # update the display
-    clock.tick(60)
+def main():
+    # intialise game features
+    pygame.init()
+    clock = pygame.time.Clock()
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    left_paddle = WallPaddle(PaddleOrientation.LEFT_ORIENTED)
+    right_paddle = WallPaddle(PaddleOrientation.RIGHT_ORIENTED)
+    ball = Ball()
+    # initial screen waits for user keypress
+    left_paddle.draw(screen)
+    right_paddle.draw(screen)
+    ball.draw(screen)
     pygame.display.flip()
-pygame.quit()
+    initial_running = True
+    while initial_running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit(0)
+            elif event.type == pygame.KEYDOWN:
+                initial_running = False
+    # main game loop
+    running = True
+    while running:
+        # user event handling
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    right_paddle.is_moving_up = True
+                elif event.key == pygame.K_DOWN:
+                    right_paddle.is_moving_down = True
+                elif event.key == pygame.K_w:
+                    left_paddle.is_moving_up = True
+                elif event.key == pygame.K_s:
+                    left_paddle.is_moving_down = True
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_UP:
+                    right_paddle.is_moving_up = False
+                elif event.key == pygame.K_DOWN:
+                    right_paddle.is_moving_down = False
+                elif event.key == pygame.K_w:
+                    left_paddle.is_moving_up = False
+                elif event.key == pygame.K_s:
+                    left_paddle.is_moving_down = False
+
+        # ball and paddle movement
+        left_paddle.move()
+        right_paddle.move()
+        ball.move(left_paddle, right_paddle)
+        # check termination condition
+        if ball.out_of_bounds(): break
+
+        # update frame buffer
+        screen.fill((0, 0, 0))
+        left_paddle.draw(screen)
+        right_paddle.draw(screen)
+        ball.draw(screen)
+
+        # update the display
+        clock.tick(MAX_FRAME_RATE)
+        pygame.display.flip()
+    pygame.quit()
+
+if __name__ == "__main__":
+    main()
