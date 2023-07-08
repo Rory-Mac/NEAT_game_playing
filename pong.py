@@ -18,8 +18,13 @@ def main():
     clock = pygame.time.Clock()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     left_paddle = PerfectAgentPaddle(PaddleOrientation.LEFT_ORIENTED)
-    right_paddle = HumanPaddle(PaddleOrientation.RIGHT_ORIENTED)
+    right_paddle = PerfectAgentPaddle(PaddleOrientation.RIGHT_ORIENTED)
     ball = Ball()
+    # notify perfect agents of initial ball position
+    if ball.horizontal_velocity < 0 and isinstance(left_paddle, PerfectAgentPaddle):
+        left_paddle.notify(ball.ghost_ball(left_paddle))
+    if ball.horizontal_velocity > 0 and isinstance(right_paddle, PerfectAgentPaddle):
+        right_paddle.notify(ball.ghost_ball(right_paddle)) 
     # initial screen waits for user keypress
     left_paddle.draw(screen)
     right_paddle.draw(screen)

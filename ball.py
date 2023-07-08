@@ -7,8 +7,8 @@ from paddle import PerfectAgentPaddle
 class Ball:
     def __init__(self):
         self.shape = pygame.Rect(SCREEN_WIDTH / 2 - BALL_WIDTH, SCREEN_HEIGHT / 2 - BALL_WIDTH, BALL_WIDTH, BALL_WIDTH)
-        self.vertical_velocity = 0
-        self.horizontal_velocity = BALL_SPEED * INITIAL_BALL_DIRECTION
+        self.vertical_velocity = random.choice([-BALL_SPEED, BALL_SPEED])
+        self.horizontal_velocity = BALL_SPEED * random.choice([-1,1])
 
     def move(self):
         self.shape.x += self.horizontal_velocity
