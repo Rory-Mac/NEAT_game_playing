@@ -3,6 +3,15 @@ from ball import Ball
 from paddle import *
 from constants import *
 
+def exit_game():
+    # end screen waits for user to quit
+    initial_running = True
+    while initial_running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit(0)
+
 def main():
     # intialise game features
     pygame.init()
@@ -30,6 +39,8 @@ def main():
         # user event handling
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                print(f"Left paddle score: {left_paddle.score}")
+                print(f"Right paddle score: {right_paddle.score}")
                 running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
@@ -55,8 +66,12 @@ def main():
         right_paddle.move()
         ball.move()
         ball.check_collisions(left_paddle, right_paddle)
+
         # check termination condition
-        if ball.out_of_bounds(): break
+        if ball.out_of_bounds(): 
+            print(f"Left paddle score: {left_paddle.score}")
+            print(f"Right paddle score: {right_paddle.score}")
+            exit_game()
 
         # update frame buffer
         screen.fill((0, 0, 0))
