@@ -8,17 +8,12 @@ class NeatTrainingGame:
     def __init__(self, screen):
         self.game = Game(NeatAgentPaddle(PaddleOrientation.LEFT_ORIENTED), NeatAgentPaddle(PaddleOrientation.RIGHT_ORIENTED), screen)
 
-    def test_ai(self, genome, config):
-        network = neat.nn.FeedForwardNetwork.create(genome, config)
-        self.game.run_NEAT_testing(network)
-
     def train_ai(self, left_genome, right_genome, config):
         left_network = neat.nn.FeedForwardNetwork.create(left_genome, config)
         right_network = neat.nn.FeedForwardNetwork.create(right_genome, config)
         left_score, right_score = self.game.run_NEAT_training(left_network, right_network)
         left_genome.fitness += left_score
         right_genome.fitness += right_score
-
 
 def eval_genomes(genomes, config):
     pygame.init()
@@ -33,7 +28,6 @@ def eval_genomes(genomes, config):
             neat_game.train_ai(left_genome, right_genome, config)
     pygame.quit()
 
-
 def run_neat(config):
     p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-0')
     #p = neat.Population(config)
@@ -45,12 +39,6 @@ def run_neat(config):
     winner = p.run(eval_genomes, 50)
     with open("best.pickle", "wb") as f:
         pickle.dump(winner, f)
-
-def test_ai(config):
-    with open("best.pickle", "rb") as f:
-        winner = pickle.load(f)
-    game = NeatTrainingGame()
-    game.test_ai(winner, config)
 
 if __name__ == "__main__":
     local_dir = os.path.dirname(__file__)
