@@ -1,8 +1,8 @@
-from constants import *
 import pygame
 import math
 import random
-from paddle import PerfectAgentPaddle
+from pong.constants import *
+from pong.paddle import PerfectAgentPaddle
 
 class Ball:
     def __init__(self):

@@ -1,8 +1,12 @@
-from enum import Enum, auto
-from abc import ABC
-from constants import *
 import pygame
 import random
+import neat
+import pickle
+import os
+from enum import Enum, auto
+from abc import ABC
+from pong.constants import *
+
 
 class PaddleOrientation(Enum):
     LEFT_ORIENTED = auto()
@@ -66,3 +70,31 @@ class PerfectAgentPaddle(Paddle):
 class NeatAgentPaddle(Paddle):
     def __init__(self, orientation):
         super().__init__(orientation)
+
+class NeatVsHumanPaddle(Paddle):
+    def __init__(self, orientation):
+        super().__init__(orientation)
+        config = self.__get_config_file()
+        with open("best.pickle", "rb") as f:
+            genome = pickle.load(f)
+        self.network = neat.nn.FeedForwardNetwork.create(genome, config)
+    
+    def __get_config_file(self):
+        curr_dir = os.getcwd()
+        config_file_path = os.path.join(curr_dir, 'config.txt')
+        return neat.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet, neat.DefaultStagnation, config_file_path)
+
+    def move(self, ball):
+        output = self.network.activate((self.shape.y, ball.shape.y, abs(self.shape.x - ball.shape.x)))
+        decision = output.index(max(output))
+        print(decision)
+        if decision == 0:
+            self.is_moving_up = False
+            self.is_moving_down = False
+        elif decision == 1:
+            self.is_moving_up = True
+            self.is_moving_down = False
+        else:
+            self.is_moving_up = False
+            self.is_moving_down = True
+        super().move()
