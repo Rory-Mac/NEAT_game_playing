@@ -96,29 +96,6 @@ class Game:
         pygame.quit()
         exit(0)
 
-    # if game is instance of NEAT AI testing session, compute AI game decisions
-    def run_NEAT_testing(self, net):
-        # initiate game loop
-        running = True
-        while running:
-            # compute NEAT AGENT decisions
-            output = net.activate((self.left_paddle.y, self.ball.y, abs(self.right_paddle.x - self.ball.x)))
-            decision = output.index(max(output))
-            if decision == 0:
-                self.left_paddle.is_moving_up = False
-                self.left_paddle.is_moving_down = False
-            elif decision == 1:
-                self.left_paddle.is_moving_up = True
-                self.left_paddle.is_moving_down = False
-            else:
-                self.left_paddle.is_moving_up = False
-                self.left_paddle.is_moving_down = True
-            # move ball and paddles
-            self.move_game_entities()
-            if self.ball.out_of_bounds():
-                break
-        return (self.left_paddle.score, self.right_paddle.score)
-
     # if game is instance of NEAT AI training session, compute AI game decisions
     def run_NEAT_training(self, left_network, right_network):
         run = True
