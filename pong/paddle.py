@@ -87,7 +87,6 @@ class NeatVsHumanPaddle(Paddle):
     def move(self, ball):
         output = self.network.activate((self.shape.y, ball.shape.y, abs(self.shape.x - ball.shape.x)))
         decision = output.index(max(output))
-        print(decision)
         if decision == 0:
             self.is_moving_up = False
             self.is_moving_down = False

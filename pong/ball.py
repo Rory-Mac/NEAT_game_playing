@@ -21,12 +21,10 @@ class Ball:
         return self.shape.x < 0 - BALL_WIDTH or self.shape.x > SCREEN_WIDTH + BALL_WIDTH
 
     def collide_with(self, paddle):
-        # calculate angle of collision
-        paddle_centre_point = paddle.y + paddle.height / 2
-        ball_centre_point = self.shape.y + self.shape.height / 2
-        relative_collision = (ball_centre_point - paddle_centre_point) / (paddle.height / 2)
-        bounce_angle = relative_collision * (math.pi / 4)
-        # update velocity based on collision
+        # compute randomised angle of collision
+        bounce_angle = 0
+        while not bounce_angle:
+            bounce_angle = math.radians(random.randrange(-30, 30))
         ball_speed = math.sqrt(self.horizontal_velocity ** 2 + self.vertical_velocity ** 2)
         self.horizontal_velocity = ball_speed * math.cos(bounce_angle)
         self.vertical_velocity = ball_speed * -math.sin(bounce_angle)
