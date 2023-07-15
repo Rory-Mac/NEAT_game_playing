@@ -1,8 +1,9 @@
 import pygame
-import random
 import pickle
-from obstacles import ObstacleGrid, FallingObstacle 
+from obstacles import ObstacleGrid
 from constants import *
+from player import Player
+import neat
 
 #----------------------------------------------------------------------
 # Store game information
@@ -23,106 +24,185 @@ def wipe_data():
         pickle.dump([], file)
 
 #----------------------------------------------------------------------
-# Manage player movement
-#----------------------------------------------------------------------
-def update_player_movement(event, player_movement):    
-    if event.type == pygame.KEYDOWN:
-        if event.key == pygame.K_UP:
-            player_movement[0] = True
-        elif event.key == pygame.K_DOWN:
-            player_movement[1] = True
-        elif event.key == pygame.K_LEFT:
-            player_movement[2] = True
-        elif event.key == pygame.K_RIGHT:
-            player_movement[3] = True
-
-    if event.type == pygame.KEYUP:
-        if event.key == pygame.K_UP:
-            player_movement[0] = False
-        elif event.key == pygame.K_DOWN:
-            player_movement[1] = False
-        elif event.key == pygame.K_LEFT:
-            player_movement[2] = False
-        elif event.key == pygame.K_RIGHT:
-            player_movement[3] = False
-
-def move_player(player):
-    if player_movement[0] and player.y > 0:
-        player.y -= 5
-    if player_movement[1] and player.y < SCREEN_HEIGHT - PLAYER_HEIGHT:
-        player.y += 5
-    if player_movement[2] and player.x > 0:
-        player.x -= 5
-    if player_movement[3] and player.x < SCREEN_WIDTH - PLAYER_WIDTH:
-        player.x += 5
-
-def check_overlaps(player):
-    for obstacle in obstacles:
-        if obstacle.x + obstacle.width > player.x and obstacle.x < player.x + player.width and \
-        obstacle.y + obstacle.height > player.y and obstacle.y < player.y + player.height:
-            return True
-    return False
-
-#----------------------------------------------------------------------
-# Initialise game features
-#----------------------------------------------------------------------
-class GameFeatures:
-    def __init__(self):
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        self.player = pygame.Rect(SCREEN_WIDTH / 2 - (PLAYER_WIDTH / 2), SCREEN_HEIGHT / 2 - (PLAYER_HEIGHT / 2) , PLAYER_WIDTH, PLAYER_HEIGHT) 
-        self.obstacle_grid = ObstacleGrid()
-        self.obstacles = []
-
-#----------------------------------------------------------------------
-# Main game loop miscellaneous functions
-#----------------------------------------------------------------------
-def generate_obstacles(obstacle_grid, obstacles):
-    if not random.randint(0, 60 / OBJECTS_PER_SECOND):
-        new_obstacle = FallingObstacle()
-        obstacles.append(new_obstacle)
-        if not obstacle_grid.player_path_exists(obstacles):
-            obstacles.remove(new_obstacle)
-        else:
-            obstacles = sorted(obstacles, key=lambda obstacle: obstacle.x)
-
-def game_exit():
-    for obstacle in obstacles:
-        print(f"x: {obstacle.x}, y: {obstacle.y}, width: {obstacle.width}, height: {obstacle.height}")
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT: 
-                exit(0)
-
-#----------------------------------------------------------------------
 # Main game loop to manage sequence of screen events and player actions
 #----------------------------------------------------------------------
+class Game:
+    def __init__(self, screen, game_surface):
+        self.clock = pygame.time.Clock()
+        self.screen = screen
+        self.game_surface = game_surface
+        self.player = Player()
+        self.obstacle_grid = ObstacleGrid()
+    
+    def game_exit(self):
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT: 
+                    pygame.quit()
+                    exit(0)
+
+    def draw_initial_display(self):
+        self.game_surface.fill((0,0,0))
+        self.player.draw(self.game_surface)
+        self.screen.blit(self.game_surface, (500, 50))
+        pygame.display.flip()
+
+    def run(self):
+        # initial screen
+        self.draw_initial_display()
+        intial_running = True
+        while intial_running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit(0)
+                if event.type == pygame.KEYDOWN:
+                    intial_running = False
+        # start main game loop
+        frame_count = 0
+        running = True
+        while running and (not PROFILE_MODE or frame_count < PROFILE_ITERATIONS):
+            # process game events
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT: 
+                    running = False
+                self.player.update_player_movement(event)
+            # move player and check for collisions
+            self.player.move()
+            if self.obstacle_grid.collides_with(self.player): 
+                self.game_exit()
+            # update obstacles
+            self.obstacle_grid.update(self.player, frame_count)
+            # update frame buffer
+            self.game_surface.fill((0,0,0))
+            self.player.draw(self.game_surface)
+            self.obstacle_grid.draw(self.game_surface)
+            # blit surfaces to screen and flip to next frame
+            self.screen.blit(self.game_surface, (500, 50))
+            self.clock.tick(MAX_FRAME_RATE)
+            pygame.display.flip()
+            frame_count += 1
+
+    def make_decision(self, network):
+        binary_grid = self.obstacle_grid.get_grid_as_binary()
+        player_row = (self.player.body.y // GRID_CELL_SIZE) * GRID_CELL_SIZE
+        player_col = (self.player.body.x // GRID_CELL_SIZE) * GRID_CELL_SIZE
+        obstacle_information = self.player.get_obstacle_distances(self.obstacle_grid)
+        return network.activate([*binary_grid, *obstacle_information, self.player.body.x, self.player.body.y, player_row, player_col])
+
+    def update_movement(self, player, network):
+        output = self.make_decision(network)
+        # up movement decision
+        if output[0] > 0.5:
+            player.is_moving_up = True
+        else:
+            player.is_moving_up = False
+        # down movement decision
+        if output[1] > 0.5:
+            player.is_moving_down = True
+        else:
+            player.is_moving_down = False
+        # left movement decision
+        if output[2] > 0.5:
+            player.is_moving_left = True
+        else:
+            player.is_moving_left = False
+        # right movement decision
+        if output[3] > 0.5:
+            player.is_moving_right = True
+        else:
+            player.is_moving_right = False
+
+    def run_NEAT_training(self, genome_tuples, config):
+        networks = []
+        players = []
+        genomes = []
+        for _, genome in genome_tuples:
+            networks.append(neat.nn.FeedForwardNetwork.create(genome, config))
+            players.append(Player())
+            genome.fitness = 0
+            genomes.append(genome)
+        # game loop
+        frame_count = 0
+        while True:
+            # compute NEAT AGENT decisions
+            for i, player in enumerate(players):
+                self.update_movement(player, networks[i])
+                # increment fitness of all players that haven't died
+                genomes[i].fitness += 0.1
+            # move game entities
+            for i, player in enumerate(players):
+                player.move()
+                # if player collides with obstacle grid, remove player
+                if self.obstacle_grid.collides_with(player): 
+                    genomes[i].fitness -= 1
+                    networks.pop(i)
+                    players.pop(i)
+                    genomes.pop(i)
+            # if no players left, end game
+            if not players: break
+            # if obstacle grid is updated (layer has been passed), increment fitness 
+            if self.obstacle_grid.update(self.player, frame_count):
+                for genome in genomes:
+                    genome.fitness += 5
+            # terminate training if fitness threshold reached (representing no. layers passed)
+            if frame_count > (GRID_CELL_SIZE // OBSTACLE_SPEED) * FITNESS_THRESHOLD: break
+            # update display
+            if VISUALISE:
+                self.game_surface.fill((0,0,0))
+                for player in players:
+                    player.draw(self.game_surface)
+                self.obstacle_grid.draw(self.game_surface)
+                self.screen.blit(self.game_surface, (500, 50))
+                pygame.display.flip()
+                # advance frame buffer
+                self.clock.tick(MAX_FRAME_RATE)
+            frame_count += 1
+
+    def run_best_agent(self, network):
+        # initial screen
+        self.draw_initial_display()
+        intial_running = True
+        while intial_running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit(0)
+                if event.type == pygame.KEYDOWN:
+                    intial_running = False
+        # Game loop
+        frame_count = 0
+        running = True
+        while running:
+            # process game events
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT: 
+                    running = False
+                self.player.update_player_movement(event)
+            # compute agent decision
+            self.update_movement(self.player, network)
+            # move player and check for collisions
+            self.player.move()
+            if self.obstacle_grid.collides_with(self.player): 
+                self.game_exit()
+            # update obstacles
+            self.obstacle_grid.update(self.player, frame_count)
+            # update frame buffer
+            self.game_surface.fill((0,0,0))
+            self.player.draw(self.game_surface)
+            self.obstacle_grid.draw(self.game_surface)
+            # blit surfaces to screen and flip to next frame
+            self.screen.blit(self.game_surface, (500, 50))
+            self.clock.tick(MAX_FRAME_RATE)
+            pygame.display.flip()
+            frame_count += 1
+
+# seperate for profiling
 if __name__ == "__main__":
     pygame.init()
-    clock = pygame.time.Clock()
-    game = GameFeatures()
-    player_movement = [False, False, False, False] # up, down, left, right
-    while True:
-        # evaluate exit conditions and update player trajectory   
-        if check_overlaps(game.player): 
-            game_exit()
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT: exit(0)
-            update_player_movement(event, player_movement)
-
-        # for continuous player movement
-        move_player(game.player)
-
-        # update obstacles
-        generate_obstacles(game.obstacle_grid, obstacles)
-        obstacles = [obstacle for obstacle in obstacles if obstacle.y < SCREEN_HEIGHT]
-
-        # update frame buffer
-        game.screen.fill((0, 0, 0))
-        pygame.draw.rect(game.screen, PLAYER_COLOR, game.player)
-        for obstacle in obstacles:
-            obstacle.update()
-            pygame.draw.rect(game.screen, OBSTACLE_COLOR, (obstacle.x, obstacle.y, obstacle.width, obstacle.height))
-
-        # advance frame based on maximum frame rate
-        clock.tick(MAX_FRAME_RATE)
-        pygame.display.flip()
+    display = pygame.display.set_mode((500 + GAME_WIDTH + 50, 50 + GAME_HEIGHT + 50))
+    pygame.draw.rect(display, (255,255,255), (490, 40, GAME_WIDTH + 20, GAME_HEIGHT + 20))
+    game_surface = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
+    game_instance = Game(display, game_surface)
+    game_instance.run()
+    pygame.quit()
