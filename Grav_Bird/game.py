@@ -1,6 +1,7 @@
 import pygame
 from constants import *
 from bird import Bird
+from pipe import Pipe
 import random
 import neat
 import pickle
@@ -8,31 +9,24 @@ import os
 
 class Game:
     def __init__(self, screen):
+        # game features
         self.screen = screen
         self.clock = pygame.time.Clock()
-        self.bird = Bird()
-        self.pipe_height = random.randint(100, 400)
-        self.pipe_x = SCREEN_WIDTH
         self.score = 0
+        self.bird = Bird()
+        self.pipes = [
+            Pipe(SCREEN_WIDTH, random.randint(100, 400), self),
+            Pipe((1.5 * SCREEN_WIDTH + 40), random.randint(100, 400), self)
+        ]
+        # image loading
+        self.bg_img = pygame.transform.scale(pygame.image.load(os.path.join("imgs","bg.png")).convert_alpha(), (SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.bird_img = pygame.transform.scale(pygame.image.load(os.path.join("imgs","bird.png")).convert_alpha(), (BIRD_SIZE, BIRD_SIZE))
+        self.floor_img = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","floor.png")).convert_alpha())
 
-    def move_pipes(self):
-        self.pipe_x -= 5
-        if self.pipe_x < -PIPE_WIDTH:
-            self.pipe_x = SCREEN_WIDTH
-            self.pipe_height = random.randint(100, SCREEN_HEIGHT - GAP_SIZE)
-            self.score += 1
-            return True
-        return False
-
-
-    def check_collisions(self, bird):
-        collision_occurred = False
-        if bird.y > SCREEN_HEIGHT or bird.y < -BIRD_SIZE:
-            collision_occurred = True
-        if bird.x + BIRD_SIZE > self.pipe_x and bird.x < self.pipe_x + PIPE_WIDTH:
-            if bird.y < self.pipe_height or bird.y + BIRD_SIZE > self.pipe_height + GAP_SIZE:
-                collision_occurred = True
-        return collision_occurred
+    def get_nearest_pipe(self):
+        if self.pipes[0].x < self.pipes[1].x:
+            return self.pipes[0]
+        return self.pipes[1]
 
     def process_game_events(self):
         for event in pygame.event.get():
@@ -44,11 +38,11 @@ class Game:
         return False
 
     def draw_game(self, birds):
-        self.screen.fill((0, 0, 0))
+        self.screen.blit(self.bg_img, (0,0))
         for bird in birds:
-            pygame.draw.rect(self.screen, (255, 255, 255), (bird.x, bird.y, BIRD_SIZE, BIRD_SIZE))
-        pygame.draw.rect(self.screen, (255, 255, 255), (self.pipe_x, 0, PIPE_WIDTH, self.pipe_height))
-        pygame.draw.rect(self.screen, (255, 255, 255), (self.pipe_x, self.pipe_height + GAP_SIZE, PIPE_WIDTH, SCREEN_HEIGHT - self.pipe_height - GAP_SIZE))
+            self.screen.blit(self.bird_img, (bird.x,bird.y))
+        for pipe in self.pipes:
+            pipe.draw(self.screen)
         pygame.display.update()
 
     def run(self):
@@ -64,14 +58,18 @@ class Game:
                 if event.type == pygame.KEYDOWN:
                     intial_running = False
         # Game loop
-        while True:
+        running = True
+        while running:
             # if quit signal returned, end game 
             if self.process_game_events(): break
             # move game entities
             self.bird.move_bird()
-            self.move_pipes()
+            for pipe in self.pipes:
+                pipe.move()
             # if collision occurred, end game
-            if self.check_collisions(self.bird): break
+            for pipe in self.pipes:
+                if pipe.check_collisions(self.bird): 
+                    running = False
             # Update display
             if VISUALISE: self.draw_game([self.bird])
             pygame.display.update()
@@ -91,7 +89,8 @@ class Game:
         while True:
             # compute NEAT AGENT decisions
             for i, bird in enumerate(birds):
-                output = networks[i].activate((bird.vel, bird.y, abs(bird.y - self.pipe_height), abs(bird.y - (self.pipe_height + GAP_SIZE))))
+                pipe = self.get_nearest_pipe()
+                output = network.activate((self.bird.vel, self.bird.y, abs(self.bird.y - pipe.y), abs(self.bird.y - (pipe.y + GAP_SIZE))))
                 if output[0] > 0.5:
                     birds[i].flap()
                 # increment fitness of all birds that haven't died
@@ -99,16 +98,19 @@ class Game:
             # move game entities
             for bird in birds:
                 bird.move_bird()
-            if self.move_pipes():
-                for genome in genomes:
-                    genome.fitness += 5
+            for pipe in self.pipes:
+                # if pipe moved off-screen increment fitness
+                if pipe.move():
+                    for genome in genomes:
+                        genome.fitness += 5
             # if collision occurred, remove bird, if no birds left, end game
             for i, bird in enumerate(birds):
-                if self.check_collisions(bird):
-                    genomes[i].fitness -= 1
-                    networks.pop(i)
-                    birds.pop(i)
-                    genomes.pop(i)
+                for pipe in self.pipes:
+                    if pipe.check_collisions(self.bird): 
+                        genomes[i].fitness -= 1
+                        networks.pop(i)
+                        birds.pop(i)
+                        genomes.pop(i)
             if not birds: break
             # terminate training if fitness threshold reached
             if self.score > FITNESS_THRESHOLD: break
@@ -130,18 +132,23 @@ class Game:
                 if event.type == pygame.KEYDOWN:
                     intial_running = False
         # Game loop
-        while True:
+        running = True
+        while running:
             # if quit signal returned, end game 
             if self.process_game_events(): break
             # compute agent decision
-            output = network.activate((self.bird.vel, self.bird.y, abs(self.bird.y - self.pipe_height), abs(self.bird.y - (self.pipe_height + GAP_SIZE))))
+            pipe = self.get_nearest_pipe()
+            output = network.activate((self.bird.vel, self.bird.y, abs(self.bird.y - pipe.y), abs(self.bird.y - (pipe.y + GAP_SIZE))))
             if output[0] > 0.5:
                 self.bird.flap()
             # move game entities
             self.bird.move_bird()
-            self.move_pipes()
+            for pipe in self.pipes:
+                pipe.move()
             # if collision occurred, end game
-            if self.check_collisions(self.bird): break
+            for pipe in self.pipes:
+                if pipe.check_collisions(self.bird):
+                    running = False
             # Update display
             if VISUALISE: self.draw_game([self.bird])
             pygame.display.update()
@@ -161,5 +168,5 @@ if __name__ == "__main__":
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     game_instance = Game(screen)
     network = load_network()
-    game_instance.run_best_agent(network)
+    game_instance.run()
     pygame.quit()
