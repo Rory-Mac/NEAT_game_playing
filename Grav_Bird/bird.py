@@ -6,7 +6,7 @@ class Bird:
         self.x = BIRD_SIZE
         self.y = SCREEN_HEIGHT // 2 - 25
 
-    def move_bird(self):
+    def move(self):
         self.vel += GRAVITY
         self.y += self.vel
 

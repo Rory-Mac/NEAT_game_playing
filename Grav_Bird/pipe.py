@@ -4,22 +4,21 @@ import random
 import os
 
 class Pipe:
-    def __init__(self, x, y, game):
-        self.game = game
+    def __init__(self, x, y):
         self.pipe_img = pygame.transform.scale(pygame.image.load(os.path.join("imgs","pipe.png")).convert_alpha(), (PIPE_WIDTH, PIPE_HEIGHT))
         self.x = x
         self.y = y
 
     def move(self):
         self.x -= PIPE_SPEED
+        # if pipe moves off-screen (left), height is randomised and pipe is moved back off-screen (right) 
         if self.x < -PIPE_WIDTH:
             self.x = SCREEN_WIDTH
             self.y = random.randint(100, SCREEN_HEIGHT - GAP_SIZE)
-            self.game.score += 1
             return True
         return False
 
-    def check_collisions(self, bird):
+    def collides_with(self, bird):
         collision_occurred = False
         if bird.y > SCREEN_HEIGHT or bird.y < -BIRD_SIZE:
             collision_occurred = True
