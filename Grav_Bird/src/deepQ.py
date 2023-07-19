@@ -34,12 +34,11 @@ class DeepQNetwork:
         state_tensor = torch.FloatTensor(state).to(self.device)
         with torch.no_grad():
             q_values = self.model(state_tensor)
-        return torch.argmax(q_values).item()
+        return torch.argmax(q_values)
 
     def replay(self, batch_size):
         if len(self.memory) < batch_size:
             return
-
         batch = random.sample(self.memory, batch_size)
         states, actions, rewards, next_states, dones = zip(*batch)
         
@@ -61,32 +60,9 @@ class DeepQNetwork:
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
-# Initialize the agent
-state_size = 3
-action_size = 2
-agent = DeepQAgent(state_size, action_size)
+    def save_state(self):
+        torch.save(self.model.state_dict(), 'trained_q_agent.pth')
 
-# Training loop
-for episode in range(50000):
-    # Set the initial state
-    state = [bird_y, top_dist, low_dist]
-
-    # Play the game
-    done = False
-    while not done:
-        # Choose an action
-        action = agent.act(state)
-
-        # Perform the action and observe the next state and reward
-        next_state = get_next_state(state, action)
-        reward = get_reward(next_state)
-        done = check_done(next_state)
-
-        # Remember the experience
-        agent.remember(state, action, reward, next_state, done)
-
-        # Update the current state
-        state = next_state
-
-        # Perform the replay step
-        agent.replay(batch_size)
+    def load_state(self):
+        torch.save(self.model.state_dict(), '')
+        self.model.load_state_dict(torch.load('trained_q_agent.pth'))

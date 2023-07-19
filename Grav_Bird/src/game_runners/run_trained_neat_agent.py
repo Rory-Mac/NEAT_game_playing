@@ -1,8 +1,8 @@
-from constants import *
-from play_types.defaultAgent import RunDefaultAgent
 import pygame
+from constants import *
+from game_runners.run_default_agent import RunDefaultAgent
 
-class RunBestAgent(RunDefaultAgent):
+class RunBestNEATAgent(RunDefaultAgent):
     def __init__(self, network, screen):
         super().__init__(screen)
         self.network = network

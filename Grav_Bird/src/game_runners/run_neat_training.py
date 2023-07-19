@@ -2,7 +2,7 @@ import neat
 import pygame
 from constants import *
 from bird import Bird
-from play_types.defaultAgent import RunDefaultAgent
+from game_runners.run_default_agent import RunDefaultAgent
 
 class RunNeatAgents(RunDefaultAgent):
     def __init__(self, genome_tuples, config, screen):

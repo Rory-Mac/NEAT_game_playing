@@ -14,7 +14,7 @@ class Pipe:
         # if pipe moves off-screen (left), height is randomised and pipe is moved back off-screen (right) 
         if self.x < -PIPE_WIDTH:
             self.x = SCREEN_WIDTH
-            self.y = random.randint(100, SCREEN_HEIGHT - GAP_SIZE)
+            self.y = random.randint(GAP_SIZE / 2, SCREEN_HEIGHT / 2)
             return True
         return False
 

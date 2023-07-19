@@ -12,8 +12,8 @@ class RunDefaultAgent:
         self.clock = pygame.time.Clock()
         self.score = 0
         self.birds = [Bird()]
-        self.nearest_pipe = Pipe(SCREEN_WIDTH, random.randint(100, 400))
-        self.farthest_pipe = Pipe((1.5 * SCREEN_WIDTH + 40), random.randint(100, 400))
+        self.nearest_pipe = Pipe(SCREEN_WIDTH, random.randint(GAP_SIZE / 2, SCREEN_HEIGHT / 2))
+        self.farthest_pipe = Pipe((1.5 * SCREEN_WIDTH + 40), random.randint(GAP_SIZE / 2, SCREEN_HEIGHT / 2))
         # image loading
         self.bg_img = pygame.transform.scale(pygame.image.load(os.path.join("imgs","bg.png")).convert_alpha(), (SCREEN_WIDTH, SCREEN_HEIGHT))
         self.floor_img = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","floor.png")).convert_alpha())
@@ -28,7 +28,7 @@ class RunDefaultAgent:
             self.process_game_events()
             self.move_game_entities()
             if self.check_collisions():
-                break
+                return self.score
             if VISUALISE:
                 self.ready_next_frame()
 
