@@ -15,13 +15,17 @@ class DeepQNetwork:
         self.epsilon_min = 0.01
         self.learning_rate = 0.001
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = self._build_model().to(self.device)
+        self.model = self.__build_model().to(self.device)
         self.loss_fn = nn.MSELoss()
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
 
-    def _build_model(self):
+    def __build_model(self):
         model = nn.Sequential(
-            nn.Linear(self.state_size, self.action_size)
+            nn.Linear(self.state_size, 32),
+            nn.LeakyReLU(),
+            nn.Linear(32, 16),
+            nn.LeakyReLU(),
+            nn.Linear(16, self.action_size),
         )
         return model
 
