@@ -44,9 +44,14 @@ class RunNeatAgents(RunDefaultAgent):
                 self.networks.pop(i)
                 self.birds.pop(i)
                 self.genomes.pop(i)
+        # if all birds die or max score exceeds fitness threshold, return end game signal 
         if not self.birds: 
             return True
-        return False
+        max_fitness = 0
+        for genome in self.genomes:
+            if genome.fitness > max_fitness:
+                max_fitness = genome.fitness
+        return max_fitness > FITNESS_THRESHOLD
     
     # no initial screen
     def initial_screen(self):

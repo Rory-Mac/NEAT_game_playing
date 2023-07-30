@@ -10,9 +10,9 @@ class DeepQNetwork:
         self.action_size = action_size
         self.memory = []
         self.gamma = 0.9  # discount rate
-        self.epsilon = 1.0  # exploration rate
+        self.epsilon = 0.1 # exploration rate
         self.epsilon_decay = 0.995
-        self.epsilon_min = 0.01
+        self.epsilon_min = 0.0001
         self.learning_rate = 0.001
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = self.__build_model().to(self.device)
@@ -33,7 +33,7 @@ class DeepQNetwork:
         self.memory.append((state, action, reward, next_state, done))
 
     def act(self, state):
-        if np.random.rand() <= self.epsilon:
+        if np.random.random() <= self.epsilon:
             return random.randrange(self.action_size)
         state_tensor = torch.FloatTensor(state).to(self.device)
         with torch.no_grad():
@@ -68,5 +68,4 @@ class DeepQNetwork:
         torch.save(self.model.state_dict(), 'trained_q_agent.pth')
 
     def load_state(self):
-        torch.save(self.model.state_dict(), '')
         self.model.load_state_dict(torch.load('trained_q_agent.pth'))

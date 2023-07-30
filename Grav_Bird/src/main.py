@@ -8,7 +8,7 @@ from game_runners.run_neat_training import RunNeatAgents
 from game_runners.run_default_agent import RunDefaultAgent
 from game_runners.run_trained_neat_agent import RunBestNEATAgent
 from game_runners.run_q_agent_training import RunDeepQAgent
-from game_runners.run_trained_q_agent import RunBestQAgent
+from game_runners.run_trained_q_agent import RunTrainedQAgent
 
 
 #-------------------------------------------------------------------------------
@@ -57,24 +57,26 @@ def run_q_learning(screen):
     # Initialize the agent
     state_size = 4
     action_size = 2
-    agent = DeepQNetwork(state_size, action_size)
-
+    network = DeepQNetwork(state_size, action_size)
     # Training loop
     max_score = 0
     for episode in range(Q_TRAINING_EPISODES):
         # create game environment
-        game = RunDeepQAgent(agent, screen)
-        # run q-learning agangt
+        game = RunDeepQAgent(network, screen)
+        # run q-learning agent
         score = game.run()
         if score > max_score:
             max_score = score 
         # log training progress
         if episode % 100 == 0:
-            print("Training episodes complete: ", episode, " max score: ", max_score)
+            print("Training episodes complete: ", episode, " max training score: ", max_score)
             max_score = 0
+            game = RunTrainedQAgent(network, screen)
+            score = game.run()
+            print("Training episodes complete: ", episode, " test score: ", max_score)
 
     # store trained q_learning agent parameters
-    agent.save_state()
+    network.save_state()
 
 def load_trained_q_agent():
     # Initialize the agent
@@ -110,6 +112,6 @@ if __name__ == "__main__":
     elif game_type == "best_qlearn":
         screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         network = load_trained_q_agent()
-        game = RunBestQAgent(network)
+        game = RunTrainedQAgent(network, screen)
         game.run()
     pygame.quit()

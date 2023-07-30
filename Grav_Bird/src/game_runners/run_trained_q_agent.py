@@ -2,7 +2,7 @@ from constants import *
 from game_runners.run_default_agent import RunDefaultAgent
 import pygame
 
-class RunBestQAgent(RunDefaultAgent):
+class RunTrainedQAgent(RunDefaultAgent):
     def __init__(self, network, screen):
         super().__init__(screen)
         self.network = network
@@ -25,4 +25,4 @@ class RunBestQAgent(RunDefaultAgent):
 
     def get_state(self):
         bird = self.birds[0]
-        return [bird.y, abs(bird.y - self.nearest_pipe.y), abs(self.nearest_pipe.y + GAP_SIZE)]
+        return [bird.y, bird.vel, abs(bird.y - self.nearest_pipe.y), abs(bird.y - (self.nearest_pipe.y + GAP_SIZE))]

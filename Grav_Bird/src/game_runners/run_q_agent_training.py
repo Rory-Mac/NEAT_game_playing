@@ -52,8 +52,8 @@ class RunDeepQAgent(RunDefaultAgent):
         self.agent.remember(self.state, self.action, self.reward, self.next_state, self.done)
         # Perform the replay step
         self.agent.replay(Q_BATCH_SIZE)
-        # end game if collision occurred
-        return self.done
+        # end game if collision occurred or fitness threshold exceeded
+        return self.done or self.score > FITNESS_THRESHOLD
     
     # no initial screen
     def initial_screen(self):
