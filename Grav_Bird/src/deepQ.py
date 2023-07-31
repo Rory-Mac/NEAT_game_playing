@@ -14,6 +14,8 @@ class DeepQNetwork:
         self.epsilon_decay = 0.995
         self.epsilon_min = 0.0001
         self.learning_rate = 0.001
+        self.learning_rate_decay = 0.995
+        self.learning_rate_min = 0.0001
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = self.__build_model().to(self.device)
         self.loss_fn = nn.MSELoss()
@@ -21,11 +23,11 @@ class DeepQNetwork:
 
     def __build_model(self):
         model = nn.Sequential(
-            nn.Linear(self.state_size, 32),
+            nn.Linear(self.state_size, 4),
             nn.LeakyReLU(),
-            nn.Linear(32, 16),
+            nn.Linear(4, 4),
             nn.LeakyReLU(),
-            nn.Linear(16, self.action_size),
+            nn.Linear(4, self.action_size),
         )
         return model
 
@@ -63,6 +65,8 @@ class DeepQNetwork:
 
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
+        if self.learning_rate > self.learning_rate_min:
+            self.learning_rate *= self.learning_rate_decay
 
     def save_state(self):
         torch.save(self.model.state_dict(), 'trained_q_agent.pth')
