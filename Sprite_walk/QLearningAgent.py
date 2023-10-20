@@ -12,7 +12,7 @@ DISCOUNT_FACTOR = 0.9
 EPSILON = 0.1
 IMAGE_SCALE_FACTOR = 40
 MAX_FRAME_RATE = 60
-VISUALISE = False
+VISUALISE = True
 
 class QLearningAgent:
     def __init__(self, game):
